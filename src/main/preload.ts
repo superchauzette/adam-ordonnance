@@ -4,6 +4,7 @@ const api = {
   ping: () => ipcRenderer.invoke("ping"),
   selectFile: () => ipcRenderer.invoke("select-file"),
   selectOutputFolder: () => ipcRenderer.invoke("select-output-folder"),
+  listOutputFolders: () => ipcRenderer.invoke("output:list-folders"),
   generateOrdonnances: (
     inputFile: string,
     outputDir: string,
@@ -17,6 +18,10 @@ const api = {
       dateFrom,
       dateTo
     ),
+  listOutputFiles: (folderName: string) =>
+    ipcRenderer.invoke("output:list-files", folderName),
+  getSecretaryEmailMapping: () =>
+    ipcRenderer.invoke("email:get-secretary-mapping"),
 };
 
 const settingsAPI = {

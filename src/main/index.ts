@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import * as fs from "node:fs";
 import * as path from "path";
+import xlsx from "xlsx";
 import { generateOrdonnances } from "./jobs/generateOrdonnace";
 import { settings } from "./settings";
 
@@ -8,7 +10,7 @@ let mainWindow: BrowserWindow | null = null;
 
 const createWindow = async () => {
   mainWindow = new BrowserWindow({
-    width: 1024,
+    width: 1280,
     height: 768,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -45,6 +47,59 @@ app.on("window-all-closed", () => {
 
 function registerIpcHandlers() {
   ipcMain.handle("ping", () => "pong");
+
+  ipcMain.handle("output:list-folders", async () => {
+    try {
+      const outputDir = await settings.get("outputDir");
+      if (!outputDir || typeof outputDir !== "string") {
+        return { success: true, folders: [] as string[] };
+      }
+
+      if (!fs.existsSync(outputDir)) {
+        return { success: true, folders: [] as string[] };
+      }
+
+      const entries = fs.readdirSync(outputDir, { withFileTypes: true });
+      const folders = entries
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name)
+        .sort((a, b) => a.localeCompare(b, "fr"));
+
+      return { success: true, folders };
+    } catch (error) {
+      console.error("Error listing output folders:", error);
+      return { success: false, folders: [] as string[], error: String(error) };
+    }
+  });
+
+  ipcMain.handle("output:list-files", async (_, folderName: string) => {
+    try {
+      const outputDir = await settings.get("outputDir");
+      if (!outputDir || typeof outputDir !== "string") {
+        return { success: true, files: [] as string[] };
+      }
+
+      const folderPath = path.join(outputDir, folderName || "");
+
+      if (
+        !fs.existsSync(folderPath) ||
+        !fs.statSync(folderPath).isDirectory()
+      ) {
+        return { success: true, files: [] as string[] };
+      }
+
+      const entries = fs.readdirSync(folderPath, { withFileTypes: true });
+      const files = entries
+        .filter((e) => e.isFile())
+        .map((e) => e.name)
+        .sort((a, b) => a.localeCompare(b, "fr"));
+
+      return { success: true, files };
+    } catch (error) {
+      console.error("Error listing folder files:", error);
+      return { success: false, files: [] as string[], error: String(error) };
+    }
+  });
 
   ipcMain.handle(
     "generateOrdonnances",
@@ -97,10 +152,59 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle("settings:get", async (_, key: string) => {
-    return await settings.get(key);
+    if (key === "outputDir") {
+      return await settings.get("outputDir");
+    }
+    return undefined;
   });
 
   ipcMain.handle("settings:set", async (_, key: string, value: any) => {
-    await settings.set(key, value);
+    if (key === "outputDir") {
+      await settings.set("outputDir", value);
+    }
+  });
+
+  ipcMain.handle("email:get-secretary-mapping", async () => {
+    try {
+      const emailFile = path.resolve("src/data/email_secretaire.xlsx");
+
+      if (!fs.existsSync(emailFile)) {
+        return {
+          success: false,
+          error: "Fichier email_secretaire.xlsx non trouvé",
+          mapping: {},
+        };
+      }
+
+      const wb = xlsx.readFile(emailFile, { cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = xlsx.utils.sheet_to_json<{
+        "HÔPITAL ": string;
+        MEDECINS: string;
+        "MAIL SECRETAIRE OU MEDECIN DIRECT": string;
+      }>(ws, { defval: "" });
+
+      // Map hospital names to email addresses
+      // Key: hospital name (normalized), Value: email
+      const mapping: Record<string, string> = {};
+
+      data.forEach((row) => {
+        const hospital = row["HÔPITAL "]?.trim() || "";
+        const email = row["MAIL SECRETAIRE OU MEDECIN DIRECT"]?.trim() || "";
+
+        if (hospital && email) {
+          // Use hospital as key (normalized)
+          const normalizedHospital = hospital.toUpperCase().trim();
+          if (!mapping[normalizedHospital]) {
+            mapping[normalizedHospital] = email;
+          }
+        }
+      });
+
+      return { success: true, mapping: data };
+    } catch (error) {
+      console.error("Error reading email mapping:", error);
+      return { success: false, error: String(error), mapping: {} };
+    }
   });
 }

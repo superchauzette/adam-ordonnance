@@ -46,6 +46,15 @@ function getTemplateBinary(templatePath: string): string {
   return bin;
 }
 
+function safeFilename(name: string): string {
+  // Replace forbidden filename characters across platforms, and collapse whitespace
+  return String(name)
+    .replace(/[\\/]/g, "-")
+    .replace(/[:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getConcurrency(): number {
   const v = Number(process.env.CONCURRENCY || "0");
   if (Number.isFinite(v) && v > 0) return Math.max(1, Math.floor(v));
@@ -127,15 +136,6 @@ function getTemplateForPatient(
   return "ORDO_Pompe_seule.docx";
 }
 
-function safeFilename(name: string): string {
-  // Replace forbidden filename characters across platforms, and collapse whitespace
-  return String(name)
-    .replace(/[\\/]/g, "-")
-    .replace(/[:*?"<>|]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function normalizeKey(key: string): string {
   return key
     .toLowerCase()
@@ -161,9 +161,11 @@ export async function generateOrdonnances(
   inputFile: string = "src/data/patients.xlsx",
   outputDir: string = "output/ordonnances",
   dateFrom?: string,
-  dateTo?: string,
-  correspondanceFile: string = "src/templates/correspondance-type-ordo.xlsx"
+  dateTo?: string
 ) {
+  const correspondanceFile = "src/templates/correspondance-type-ordo.xlsx";
+  const templateDir = "src/templates/type-ordonance";
+
   const patients = readExcel<PatientData>(inputFile);
   const correspondances = readExcel<CorrespondanceEntry>(correspondanceFile);
 
@@ -203,13 +205,15 @@ export async function generateOrdonnances(
     async (patient) => {
       console.log({ patient });
       const templateName = getTemplateForPatient(patient, correspondances);
-      const templatePath = `src/templates/type-ordonance/${templateName}`;
+      const templatePath = `${templateDir}/${templateName}`;
 
       const docxBuf = renderDocx(templatePath, patient);
       const base = safeFilename(`${patient.nom}_${patient.prenom}`);
 
       // Organize by "Centre initiateur"
-      const centre = safeFilename(patient.centre_initiateur || "Sans_centre");
+      const centre = safeFilename(
+        patient.prescripteur || "prescripteur_inconnu"
+      );
       const centreDir = path.join(outputDir, centre);
       fs.mkdirSync(centreDir, { recursive: true });
 
