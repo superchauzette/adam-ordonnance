@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: radial-gradient(circle at 20% 20%, #f2f7ff, #ffffff);
+  color: #0f172a;
+  padding: 48px 24px;
+  box-sizing: border-box;
+}
+
