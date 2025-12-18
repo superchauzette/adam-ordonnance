@@ -15,7 +15,9 @@
     "dev:electron": "wait-on dist/main/index.js http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electronmon dist/main/index.js",
     "lint": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
     "start": "npm run build && electron .",
-    "package": "npm run build && electron-builder"
+    "package": "npm run build && electron-builder",
+    "package:win": "npm run build && electron-builder --win",
+    "package:mac": "npm run build && electron-builder --mac"
   },
   "build": {
     "appId": "com.adam.ordonnance",
@@ -23,8 +25,14 @@
     "files": [
       "dist/main/**/*",
       "dist/renderer/**/*",
+      "src/scripts/**/*.ps1",
+      "src/templates/**/*",
       "package.json"
     ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
+    },
     "directories": {
       "output": "release"
     }
