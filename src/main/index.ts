@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "path";
 import xlsx from "xlsx";
 import { generateOrdonnances } from "./jobs/generateOrdonnace";
+import { sendEmail } from "./jobs/sendEmail";
 import { settings } from "./settings";
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
@@ -207,4 +208,50 @@ function registerIpcHandlers() {
       return { success: false, error: String(error), mapping: {} };
     }
   });
+
+  ipcMain.handle(
+    "email:send",
+    async (
+      _,
+      to: string,
+      subject: string,
+      body: string,
+      folderName: string,
+      files: string[],
+      mode: "draft" | "send"
+    ) => {
+      try {
+        const outputDir = await settings.get("outputDir");
+        if (!outputDir || typeof outputDir !== "string") {
+          return {
+            success: false,
+            message: "outputDir non configuré",
+            error: "outputDir not set",
+          };
+        }
+
+        // Build full paths for attachments
+        const fullPaths = files.map((file) =>
+          path.join(outputDir, folderName, file)
+        );
+
+        const result = await sendEmail({
+          to,
+          subject,
+          body,
+          files: fullPaths,
+          mode,
+        });
+
+        return result;
+      } catch (error) {
+        console.error("Error sending email:", error);
+        return {
+          success: false,
+          message: "Erreur lors de l'envoi",
+          error: String(error),
+        };
+      }
+    }
+  );
 }

@@ -19,6 +19,18 @@ declare global {
         files: string[];
         error?: string;
       }>;
+      sendEmail: (
+        to: string,
+        subject: string,
+        body: string,
+        folderName: string,
+        files: string[],
+        mode: "brouillon" | "envoi"
+      ) => Promise<{
+        success: boolean;
+        message: string;
+        error?: string;
+      }>;
     };
     settingsAPI: SettingsAPI;
   }

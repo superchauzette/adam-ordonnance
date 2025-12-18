@@ -22,6 +22,23 @@ const api = {
     ipcRenderer.invoke("output:list-files", folderName),
   getSecretaryEmailMapping: () =>
     ipcRenderer.invoke("email:get-secretary-mapping"),
+  sendEmail: (
+    to: string,
+    subject: string,
+    body: string,
+    folderName: string,
+    files: string[],
+    mode: "draft" | "send"
+  ) =>
+    ipcRenderer.invoke(
+      "email:send",
+      to,
+      subject,
+      body,
+      folderName,
+      files,
+      mode
+    ),
 };
 
 const settingsAPI = {

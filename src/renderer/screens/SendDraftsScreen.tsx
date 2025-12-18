@@ -10,7 +10,7 @@ const formSchema = z.object({
   to: z.string().min(1, "Destinataire requis"),
   subject: z.string().min(1, "Objet requis"),
   body: z.string().min(1, "Message requis"),
-  action: z.enum(["brouillon", "send"]),
+  action: z.enum(["draft", "send"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -133,6 +133,8 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
   const emailMapping = useEmailMapping();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [log, setLog] = useState("");
+  const [sending, setSending] = useState(false);
+  const { files, loading: loadingFiles } = useFolderFiles(selectedFolder);
 
   const {
     register,
@@ -147,6 +149,7 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
       to: "",
       subject: "Envoi des ordonnances",
       body: "Bonjour,\n\nCordialement,\n",
+      action: "draft",
     },
   });
 
@@ -177,13 +180,37 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
       return;
     }
 
-    console.log({ data });
+    setSending(true);
+    setLog(
+      `⏳ ${data.action === "send" ? "Envoi" : "Mise en brouillon"} en cours...`
+    );
 
-    reset({ ...data });
+    try {
+      const result = await window.api.sendEmail(
+        data.to,
+        data.subject,
+        data.body,
+        selectedFolder,
+        files,
+        data.action
+      );
+
+      if (result.success) {
+        setLog(`✅ ${result.message}`);
+      } else {
+        setLog(
+          `❌ ${result.message}${result.error ? `\n${result.error}` : ""}`
+        );
+      }
+    } catch (error) {
+      setLog(`❌ Erreur: ${error}`);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-[95vh] flex flex-col overflow-hidden">
       <Header />
       <div className="flex-1 bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
         <div className="h-full grid grid-cols-1 md:grid-cols-12">
@@ -204,7 +231,11 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
               </p>
             </div>
 
-            <PieceJointeList selectedFolder={selectedFolder} />
+            <PieceJointeList
+              selectedFolder={selectedFolder}
+              files={files}
+              loadingFiles={loadingFiles}
+            />
 
             <form className="space-y-5" onSubmit={handleSubmit(submit)}>
               <label className="flex flex-col gap-1.5">
@@ -261,32 +292,42 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
 
               <div className="flex gap-3 justify-end pt-1">
                 <button
-                  type="submit"
+                  type="button"
                   onClick={() => {
-                    setValue("action", "brouillon");
-                    // trigger submit with "brouillon" action
+                    setValue("action", "draft");
                     handleSubmit(submit)();
                   }}
-                  disabled={!selectedFolder || !isValid}
+                  disabled={!selectedFolder || !isValid || sending}
                   className="px-6 py-2.5 bg-slate-300 text-slate-800 font-semibold 
                     rounded-xl shadow-lg shadow-slate-300/30 hover:shadow-slate-300/50 
                     hover:bg-slate-400 transition-all duration-200
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                 >
-                  Mettre en brouillon
+                  {sending ? "⏳ En cours..." : "Mettre en brouillon"}
                 </button>
                 <button
-                  type="submit"
-                  {...register("action", { value: "send" })}
-                  disabled={!selectedFolder || !isValid}
+                  type="button"
+                  onClick={() => {
+                    setValue("action", "send");
+                    handleSubmit(submit)();
+                  }}
+                  disabled={!selectedFolder || !isValid || sending}
                   className="px-6 py-2.5 bg-linear-to-r from-sky-400 to-sky-500 text-white font-semibold 
                     rounded-xl shadow-lg shadow-sky-400/30 hover:shadow-sky-400/50 
                     hover:from-sky-500 hover:to-sky-600 transition-all duration-200
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                 >
-                  Envoyer
+                  {sending ? "⏳ En cours..." : "Envoyer"}
                 </button>
               </div>
+
+              {log && (
+                <div className="p-4 bg-slate-100 border border-slate-200 rounded-lg">
+                  <pre className="text-sm text-slate-700 whitespace-pre-wrap font-mono">
+                    {log}
+                  </pre>
+                </div>
+              )}
             </form>
           </section>
         </div>
@@ -366,12 +407,14 @@ function NavFolders({
 }
 
 function PieceJointeList({
+  loadingFiles,
+  files,
   selectedFolder,
 }: {
+  loadingFiles: boolean;
+  files: string[];
   selectedFolder: string | null;
 }) {
-  const { files, loading: loadingFiles } = useFolderFiles(selectedFolder);
-
   return (
     <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
       <div className="flex items-center justify-between mb-2">
