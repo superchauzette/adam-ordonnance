@@ -4,6 +4,7 @@ import * as path from "path";
 import xlsx from "xlsx";
 import { generateOrdonnances } from "./jobs/generateOrdonnace";
 import { sendEmail } from "./jobs/sendEmail";
+import { wordToPdf } from "./jobs/wordToPdf";
 import { settings } from "./settings";
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
@@ -251,6 +252,18 @@ function registerIpcHandlers() {
           message: "Erreur lors de l'envoi",
           error: String(error),
         };
+      }
+    }
+  );
+  ipcMain.handle(
+    "word-to-pdf",
+    async (_, inputDocx: string, outputPdf: string) => {
+      try {
+        const pdfPath = await wordToPdf({ inputDocx, outputPdf });
+        return { success: true, pdfPath };
+      } catch (error) {
+        console.error("Error converting Word to PDF:", error);
+        return { success: false, error: String(error) };
       }
     }
   );

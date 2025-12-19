@@ -39,6 +39,8 @@ const api = {
       files,
       mode
     ),
+  wordToPdf: (inputDocx: string, outputPdf: string) =>
+    ipcRenderer.invoke("word-to-pdf", inputDocx, outputPdf),
 };
 
 const settingsAPI = {
