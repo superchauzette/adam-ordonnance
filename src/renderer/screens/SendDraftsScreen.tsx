@@ -231,104 +231,112 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
               </p>
             </div>
 
-            <PieceJointeList
-              selectedFolder={selectedFolder}
-              files={files}
-              loadingFiles={loadingFiles}
-            />
+            {Boolean(selectedFolder) && (
+              <PieceJointeList
+                selectedFolder={selectedFolder}
+                files={files}
+                loadingFiles={loadingFiles}
+              />
+            )}
 
-            <form className="space-y-5" onSubmit={handleSubmit(submit)}>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-slate-700">À</span>
-                <input
-                  type="email"
-                  {...register("to")}
-                  disabled={!selectedFolder}
-                  placeholder="destinataire@exemple.com"
-                  className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
+            {Boolean(selectedFolder) && (
+              <form className="space-y-5" onSubmit={handleSubmit(submit)}>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold text-slate-700">
+                    À
+                  </span>
+                  <input
+                    type="email"
+                    {...register("to")}
+                    disabled={!selectedFolder}
+                    placeholder="destinataire@exemple.com"
+                    className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
                     focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent focus:bg-white
                     transition-all disabled:opacity-60 placeholder:text-gray-100"
-                />
-                {errors.to && (
-                  <p className="text-xs text-red-500">{errors.to.message}</p>
-                )}
-              </label>
+                  />
+                  {errors.to && (
+                    <p className="text-xs text-red-500">{errors.to.message}</p>
+                  )}
+                </label>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-slate-700">
-                  Objet
-                </span>
-                <input
-                  type="text"
-                  {...register("subject")}
-                  disabled={!selectedFolder}
-                  className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold text-slate-700">
+                    Objet
+                  </span>
+                  <input
+                    type="text"
+                    {...register("subject")}
+                    disabled={!selectedFolder}
+                    className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
                     focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent focus:bg-white
                     transition-all disabled:opacity-60"
-                />
-                {errors.subject && (
-                  <p className="text-xs text-red-500">
-                    {errors.subject.message}
-                  </p>
-                )}
-              </label>
+                  />
+                  {errors.subject && (
+                    <p className="text-xs text-red-500">
+                      {errors.subject.message}
+                    </p>
+                  )}
+                </label>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-slate-700">
-                  Message
-                </span>
-                <textarea
-                  {...register("body")}
-                  disabled={!selectedFolder}
-                  rows={10}
-                  className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold text-slate-700">
+                    Message
+                  </span>
+                  <textarea
+                    {...register("body")}
+                    disabled={!selectedFolder}
+                    rows={10}
+                    className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
                     focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent focus:bg-white
                     transition-all disabled:opacity-60"
-                />
-                {errors.body && (
-                  <p className="text-xs text-red-500">{errors.body.message}</p>
-                )}
-              </label>
+                  />
+                  {errors.body && (
+                    <p className="text-xs text-red-500">
+                      {errors.body.message}
+                    </p>
+                  )}
+                </label>
 
-              <div className="flex gap-3 justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValue("action", "draft");
-                    handleSubmit(submit)();
-                  }}
-                  disabled={!selectedFolder || !isValid || sending}
-                  className="px-6 py-2.5 bg-slate-300 text-slate-800 font-semibold 
+                <div className="flex gap-3 justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue("action", "draft");
+                      handleSubmit(submit)();
+                    }}
+                    disabled={!selectedFolder || !isValid || sending}
+                    className="px-6 py-2.5 bg-slate-300 text-slate-800 font-semibold 
                     rounded-xl shadow-lg shadow-slate-300/30 hover:shadow-slate-300/50 
                     hover:bg-slate-400 transition-all duration-200
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                >
-                  {sending ? "⏳ En cours..." : "Mettre en brouillon"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValue("action", "send");
-                    handleSubmit(submit)();
-                  }}
-                  disabled={!selectedFolder || !isValid || sending}
-                  className="px-6 py-2.5 bg-linear-to-r from-sky-400 to-sky-500 text-white font-semibold 
+                  >
+                    {sending ? "⏳ En cours..." : "Mettre en brouillon"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue("action", "send");
+                      handleSubmit(submit)();
+                    }}
+                    disabled={!selectedFolder || !isValid || sending}
+                    className="px-6 py-2.5 bg-linear-to-r from-sky-400 to-sky-500 text-white font-semibold 
                     rounded-xl shadow-lg shadow-sky-400/30 hover:shadow-sky-400/50 
                     hover:from-sky-500 hover:to-sky-600 transition-all duration-200
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                >
-                  {sending ? "⏳ En cours..." : "Envoyer"}
-                </button>
-              </div>
-
-              {log && (
-                <div className="p-4 bg-slate-100 border border-slate-200 rounded-lg">
-                  <pre className="text-sm text-slate-700 whitespace-pre-wrap font-mono">
-                    {log}
-                  </pre>
+                  >
+                    {sending ? "⏳ En cours..." : "Envoyer"}
+                  </button>
                 </div>
-              )}
-            </form>
+
+                {log && (
+                  <div className="p-4 bg-slate-100 border border-slate-200 rounded-lg">
+                    <pre className="text-sm text-slate-700 whitespace-pre-wrap font-mono">
+                      {log}
+                    </pre>
+                  </div>
+                )}
+              </form>
+            )}
           </section>
         </div>
       </div>

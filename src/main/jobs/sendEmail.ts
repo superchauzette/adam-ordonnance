@@ -78,13 +78,13 @@ export function sendEmail({
             success: true,
             message:
               stdout.trim() ||
-              `Email ${mode === "envoi" ? "sent" : "saved as draft"} to ${to}`,
+              `Email ${mode === "send" ? "sent" : "saved as draft"} to ${to}`,
           });
         } else {
           const error = stderr.trim() || stdout.trim() || "Unknown error";
           resolve({
             success: false,
-            message: `Failed to ${mode === "envoi" ? "send" : "save"} email`,
+            message: `Failed to ${mode === "send" ? "send" : "save"} email`,
             error: error,
           });
         }
