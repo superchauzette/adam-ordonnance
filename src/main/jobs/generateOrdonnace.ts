@@ -161,10 +161,11 @@ export async function generateOrdonnances(
   inputFile: string = "src/data/patients.xlsx",
   outputDir: string = "output/ordonnances",
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
+  templateDir: string = "src/templates"
 ) {
-  const correspondanceFile = "src/templates/correspondance-type-ordo.xlsx";
-  const templateDir = "src/templates/type-ordonance";
+  const correspondanceFile = path.resolve(templateDir, "correspondance-type-ordo.xlsx");
+  const typeOrdoDir = path.resolve(templateDir, "type-ordonance");
 
   const patients = readExcel<PatientData>(inputFile);
   const correspondances = readExcel<CorrespondanceEntry>(correspondanceFile);
@@ -205,7 +206,7 @@ export async function generateOrdonnances(
     async (patient) => {
       patient.dlp_pompe = formatDate(patient.dlp_pompe)
       const templateName = getTemplateForPatient(patient, correspondances);
-      const templatePath = `${templateDir}/${templateName}`;
+      const templatePath = `${typeOrdoDir}/${templateName}`;
 
       const docxBuf = renderDocx(templatePath, patient);
       const base = safeFilename(`${patient.nom}_${patient.prenom}`);

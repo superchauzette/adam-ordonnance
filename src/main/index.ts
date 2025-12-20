@@ -113,11 +113,13 @@ function registerIpcHandlers() {
       dateTo?: string
     ) => {
       try {
+        const templateDir = (await settings.get("templateDir")) || "src/templates";
         const result = await generateOrdonnances(
           inputFile,
           outputDir,
           dateFrom,
-          dateTo
+          dateTo,
+          templateDir as string
         );
         return result;
       } catch (error) {
@@ -154,16 +156,12 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle("settings:get", async (_, key: string) => {
-    if (key === "outputDir") {
-      return await settings.get("outputDir");
-    }
-    return undefined;
+ 
+      return await settings.get(key as "outputDir" | "templateDir");
   });
 
   ipcMain.handle("settings:set", async (_, key: string, value: any) => {
-    if (key === "outputDir") {
-      await settings.set("outputDir", value);
-    }
+      await settings.set(key as "outputDir" | "templateDir", value); 
   });
 
   ipcMain.handle("email:get-secretary-mapping", async () => {
