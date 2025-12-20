@@ -157,11 +157,11 @@ function registerIpcHandlers() {
 
   ipcMain.handle("settings:get", async (_, key: string) => {
  
-      return await settings.get(key as "outputDir" | "templateDir");
+      return await settings.get(key as "outputDir" | "templateDir" | "body");
   });
 
   ipcMain.handle("settings:set", async (_, key: string, value: any) => {
-      await settings.set(key as "outputDir" | "templateDir", value); 
+      await settings.set(key as "outputDir" | "templateDir" | "body", value); 
   });
 
   ipcMain.handle("email:get-secretary-mapping", async () => {

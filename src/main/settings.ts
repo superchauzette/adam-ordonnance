@@ -1,6 +1,7 @@
 type Settings = {
   outputDir?: string;
   templateDir?: string;
+  body?: string;
 };
 
 let storePromise: Promise<any> | null = null;
@@ -14,7 +15,11 @@ function getStore() {
       const Store = mod.default as unknown as new (opts: any) => any;
       const store = new Store({
         name: "settings",
-        defaults: { outputDir: "", templateDir: "src/templates" },
+        defaults: { 
+          outputDir: "", 
+          templateDir: "src/templates",
+          body: "Bonjour,\n\nVeuillez trouver ci-joint les ordonnances demandées.\n\nCordialement,"
+        },
       });
 
       return store as {
