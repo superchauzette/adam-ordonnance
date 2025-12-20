@@ -38,7 +38,7 @@
     },
     "extraResources": [
       {
-        "from": "scripts",
+        "from": "src/scripts",
         "to": "scripts"
       }
     ]

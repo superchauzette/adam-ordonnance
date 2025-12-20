@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, ipcMain, dialog,Menu  } from "electron";
 import * as fs from "node:fs";
 import * as path from "path";
 import xlsx from "xlsx";
@@ -11,9 +11,12 @@ const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = async () => {
+  Menu.setApplicationMenu(null);
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 768,
+    icon: path.join(__dirname, "../../build/icon.ico"), // Windows
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -21,6 +24,8 @@ const createWindow = async () => {
       nodeIntegration: false,
     },
   });
+
+ 
 
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
