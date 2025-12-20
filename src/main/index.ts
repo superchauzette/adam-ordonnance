@@ -156,17 +156,18 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle("settings:get", async (_, key: string) => {
- 
-      return await settings.get(key as "outputDir" | "templateDir" | "body");
+
+    return await settings.get(key as "outputDir" | "templateDir" | "body");
   });
 
   ipcMain.handle("settings:set", async (_, key: string, value: any) => {
-      await settings.set(key as "outputDir" | "templateDir" | "body", value); 
+    await settings.set(key as "outputDir" | "templateDir" | "body", value);
   });
 
   ipcMain.handle("email:get-secretary-mapping", async () => {
     try {
-      const emailFile = path.resolve("src/templates/email_secretaire.xlsx");
+      const templateDir = (await settings.get("templateDir")) || "src/templates";
+      const emailFile = path.resolve(path.join(templateDir, "email_secretaire.xlsx"));
 
       if (!fs.existsSync(emailFile)) {
         return {
