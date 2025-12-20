@@ -168,7 +168,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle("email:get-secretary-mapping", async () => {
     try {
-      const emailFile = path.resolve("src/data/email_secretaire.xlsx");
+      const emailFile = path.resolve("src/templates/email_secretaire.xlsx");
 
       if (!fs.existsSync(emailFile)) {
         return {
@@ -181,27 +181,10 @@ function registerIpcHandlers() {
       const wb = xlsx.readFile(emailFile, { cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const data = xlsx.utils.sheet_to_json<{
-        "HÔPITAL ": string;
+        "HOPITAL": string;
         MEDECINS: string;
-        "MAIL SECRETAIRE OU MEDECIN DIRECT": string;
+        "Email": string;
       }>(ws, { defval: "" });
-
-      // Map hospital names to email addresses
-      // Key: hospital name (normalized), Value: email
-      const mapping: Record<string, string> = {};
-
-      data.forEach((row) => {
-        const hospital = row["HÔPITAL "]?.trim() || "";
-        const email = row["MAIL SECRETAIRE OU MEDECIN DIRECT"]?.trim() || "";
-
-        if (hospital && email) {
-          // Use hospital as key (normalized)
-          const normalizedHospital = hospital.toUpperCase().trim();
-          if (!mapping[normalizedHospital]) {
-            mapping[normalizedHospital] = email;
-          }
-        }
-      });
 
       return { success: true, mapping: data };
     } catch (error) {

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useOutputDir } from "./useOutputDir";
+import { useOutputDir } from "../hooks/useOutputDir";
+import { useSetting } from "../hooks/useSetting";
 
 type SendDraftsScreenProps = {};
 
@@ -17,7 +18,12 @@ type FormValues = z.infer<typeof formSchema>;
 
 // Custom hook: Load secretary email mapping
 function useEmailMapping() {
-  const [emailMapping, setEmailMapping] = useState([]);
+  type EmailMapping = {
+    HOPITAL: string;
+    MEDECINS: string;
+    Email: string;
+  };
+  const [emailMapping, setEmailMapping] = useState<EmailMapping[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,17 +135,17 @@ function useFolderFiles(selectedFolder: string | null) {
   return { files, loading };
 }
 
-export function SendDraftsScreen({}: SendDraftsScreenProps) {
+export function SendDraftsScreen({ }: SendDraftsScreenProps) {
   const emailMapping = useEmailMapping();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [log, setLog] = useState("");
   const [sending, setSending] = useState(false);
   const { files, loading: loadingFiles } = useFolderFiles(selectedFolder);
+  const settingBody = useSetting("body");
 
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors, isValid },
     setValue,
   } = useForm<FormValues>({
@@ -148,7 +154,7 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
     defaultValues: {
       to: "",
       subject: "Envoi des ordonnances",
-      body: "Bonjour,\n\nCordialement,\n",
+      body: settingBody.value,
       action: "draft",
     },
   });
@@ -157,8 +163,8 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
   useEffect(() => {
     if (selectedFolder && emailMapping) {
       const email = emailMapping.find(
-        (e: any) => e.MEDECINS === selectedFolder
-      )?.["Email"];
+        (e) => e.MEDECINS === selectedFolder
+      )?.Email;
 
       if (email) {
         setValue("to", email, { shouldValidate: true });
@@ -196,10 +202,11 @@ export function SendDraftsScreen({}: SendDraftsScreenProps) {
       );
 
       if (result.success) {
-        setLog(`✅ ${result.message}`);
+        settingBody.save(data.body);
+        setLog(`✅ ${result.raw}`);
       } else {
         setLog(
-          `❌ ${result.message}${result.error ? `\n${result.error}` : ""}`
+          `❌ ${result.raw}${result.error ? `\n${result.error}` : ""}`
         );
       }
     } catch (error) {
