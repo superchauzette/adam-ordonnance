@@ -3,11 +3,15 @@ param(
   [Parameter(Mandatory=$true)][string]$Subject,
   [Parameter(Mandatory=$true)][string]$Body,
   [Parameter(Mandatory=$true)][ValidateSet("draft", "send")][string]$Mode,
-  [string[]]$Files
+  [string]$PayloadFiles
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+$data = $PayloadFiles | ConvertFrom-Json
+$Files = $data.files
+
 
 function Resolve-FullPath([string]$p) {
   if ([string]::IsNullOrWhiteSpace($p)) { return $null }
@@ -41,17 +45,10 @@ try {
   
   # Attach files if provided
   if (-not [string]::IsNullOrWhiteSpace($Files)) {
-    # Split the pipe-separated file list
-    $fileArray = $Files -split '\|' | ForEach-Object { $_.Trim() }
-    
-    foreach ($file in $fileArray) {
-      if (-not [string]::IsNullOrWhiteSpace($file)) {
+ 
+    foreach ($file in $Files) {  
         $fullPath = Resolve-FullPath $file
-        if ($fullPath) {
-          # 1 = olByValue (embed file), position is ignored for mail items
-          $mail.Attachments.Add($fullPath, 1) | Out-Null
-        }
-      }
+        $mail.Attachments.Add($fullPath, 1) | Out-Null    
     }
   }
   

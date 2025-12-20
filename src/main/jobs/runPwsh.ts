@@ -8,7 +8,7 @@ export function runPwsh(scriptPath: string, argsObj: any) {
     ]);
 
     const ps = spawn(
-      "powershell.exe", // ou pwsh
+      "powershell.exe",
       [
         "-NoProfile",
         "-NonInteractive",
@@ -16,6 +16,10 @@ export function runPwsh(scriptPath: string, argsObj: any) {
         "Bypass",
         "-File",
         scriptPath,
+
+        // 🔥 IMPORTANT: stop parsing, tout ce qui suit est passé littéralement
+        "--%",
+
         ...args,
       ],
       { windowsHide: true }
@@ -31,12 +35,8 @@ export function runPwsh(scriptPath: string, argsObj: any) {
 
     ps.on("close", (code) => {
       if (code !== 0) {
-        return reject(
-          new Error(`PowerShell exit ${code}\n${stderr || stdout}`)
-        );
+        return reject(new Error(`PowerShell exit ${code}\n${stderr || stdout}`));
       }
-
-      // Ici on s’attend à du JSON
       try {
         resolve(JSON.parse(stdout));
       } catch {
