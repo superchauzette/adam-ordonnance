@@ -1,5 +1,6 @@
 import path from "node:path";
 import { runPwsh } from "./runPwsh";
+import { settings } from "../settings";
 
 type SendEmailArgs = {
   to: string;
@@ -17,7 +18,7 @@ export async function sendEmail({
   mode,
 }: SendEmailArgs) {
 
-  const scriptPath = path.join("src", "scripts", "send-mails.ps1")
+  const scriptPath = (await settings.get("sendMailsScriptPath")) || path.join("src", "scripts", "send-mails.ps1")
 
   const result = await runPwsh(scriptPath, {
     To: to,

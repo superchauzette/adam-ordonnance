@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { FolderPicker } from "../components/FolderPicker";
+import { FilePicker } from "../components/FilePicker";
 
 type ParametresScreenProps = {};
 
 export function ParametresScreen({}: ParametresScreenProps) {
   const [templateDir, setTemplateDir] = useState("");
   const [body, setBody] = useState("");
+  const [sendMailsScriptPath, setSendMailsScriptPath] = useState("");
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -17,6 +19,11 @@ export function ParametresScreen({}: ParametresScreenProps) {
       const savedBody = await window.settingsAPI.get("body");
       if (savedBody && typeof savedBody === "string") {
         setBody(savedBody);
+      }
+
+      const savedScriptPath = await window.settingsAPI.get("sendMailsScriptPath");
+      if (savedScriptPath && typeof savedScriptPath === "string") {
+        setSendMailsScriptPath(savedScriptPath);
       }
     };
     loadSettings();
@@ -31,6 +38,11 @@ export function ParametresScreen({}: ParametresScreenProps) {
     const value = e.target.value;
     setBody(value);
     await window.settingsAPI.set("body", value);
+  };
+
+  const handleScriptPathChange = async (path: string) => {
+    setSendMailsScriptPath(path);
+    await window.settingsAPI.set("sendMailsScriptPath", path);
   };
 
   return (
@@ -83,6 +95,20 @@ export function ParametresScreen({}: ParametresScreenProps) {
                 transition-all"
               />
             </label>
+          </div>
+
+          <div className="border-t pt-6">
+            <FilePicker
+              label="Script PowerShell d'envoi d'emails"
+              value={sendMailsScriptPath}
+              onChange={handleScriptPathChange}
+              placeholder="src/scripts/send-mails.ps1"
+              buttonLabel="Sélectionner le script"
+              filters={[{ name: "PowerShell", extensions: ["ps1"] }]}
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Chemin du script PowerShell utilisé pour envoyer les emails via Outlook
+            </p>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ type Settings = {
   outputDir?: string;
   templateDir?: string;
   body?: string;
+  sendMailsScriptPath?: string;
 };
 
 let storePromise: Promise<any> | null = null;
@@ -18,7 +19,8 @@ function getStore() {
         defaults: { 
           outputDir: "", 
           templateDir: "src/templates",
-          body: "Bonjour,\n\nVeuillez trouver ci-joint les ordonnances demandées.\n\nCordialement,"
+          body: "Bonjour,\n\nVeuillez trouver ci-joint les ordonnances demandées.\n\nCordialement,",
+          sendMailsScriptPath: "src/scripts/send-mails.ps1"
         },
       });
 

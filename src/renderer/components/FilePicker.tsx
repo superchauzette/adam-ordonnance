@@ -5,6 +5,7 @@ type FilePickerProps = {
   buttonLabel?: string;
   placeholder?: string;
   error?: string;
+  filters?: { name: string; extensions: string[] }[];
 };
 
 export function FilePicker({
@@ -14,11 +15,12 @@ export function FilePicker({
   buttonLabel = "Choisir un fichier",
   placeholder = "Aucun fichier sélectionné",
   error,
+  filters,
 }: FilePickerProps) {
   const fileName = value ? value.split(/[\\/]/).pop() || value : "";
 
   const handlePick = async () => {
-    const filePath = await window.api.selectFile();
+    const filePath = await window.api.selectFile(filters);
     if (filePath) {
       onChange(filePath);
     }

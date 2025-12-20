@@ -159,6 +159,11 @@ export function SendDraftsScreen({ }: SendDraftsScreenProps) {
     },
   });
 
+  useEffect(() => {
+    if(settingBody.value)
+    setValue("body", settingBody.value);
+  }, [settingBody.value, setValue]);
+
   // When folder is selected, try to find matching email
   useEffect(() => {
     if (selectedFolder && emailMapping) {

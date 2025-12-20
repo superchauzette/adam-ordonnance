@@ -129,10 +129,10 @@ function registerIpcHandlers() {
     }
   );
 
-  ipcMain.handle("select-file", async () => {
+  ipcMain.handle("select-file", async (_, filters?: { name: string; extensions: string[] }[]) => {
     const result = await dialog.showOpenDialog({
       properties: ["openFile"],
-      filters: [{ name: "Excel", extensions: ["xlsx", "xls", "csv"] }],
+      filters: filters || [{ name: "Excel", extensions: ["xlsx", "xls", "csv"] }],
     });
 
     if (result.canceled || result.filePaths.length === 0) {
@@ -157,11 +157,11 @@ function registerIpcHandlers() {
 
   ipcMain.handle("settings:get", async (_, key: string) => {
 
-    return await settings.get(key as "outputDir" | "templateDir" | "body");
+    return await settings.get(key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath");
   });
 
   ipcMain.handle("settings:set", async (_, key: string, value: any) => {
-    await settings.set(key as "outputDir" | "templateDir" | "body", value);
+    await settings.set(key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath", value);
   });
 
   ipcMain.handle("email:get-secretary-mapping", async () => {

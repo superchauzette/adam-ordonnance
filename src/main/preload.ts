@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 
 const api = {
   ping: () => ipcRenderer.invoke("ping"),
-  selectFile: () => ipcRenderer.invoke("select-file"),
+  selectFile: (filters?: { name: string; extensions: string[] }[]) => ipcRenderer.invoke("select-file", filters),
   selectOutputFolder: () => ipcRenderer.invoke("select-output-folder"),
   listOutputFolders: () => ipcRenderer.invoke("output:list-folders"),
   generateOrdonnances: (

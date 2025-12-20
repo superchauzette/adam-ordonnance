@@ -12,7 +12,7 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<GenerateOrdersScreen />} />
-          <Route path="/convert" element={<ConvertPdfScreen />} />
+          {/* <Route path="/convert" element={<ConvertPdfScreen />} /> */}
           <Route path="/send" element={<SendDraftsScreen />} />
           <Route path="/parametres" element={<ParametresScreen />} />
         </Routes>
