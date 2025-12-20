@@ -2,6 +2,8 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { app } from "electron";
 
+const isDev = !app.isPackaged;
+
 type SendEmailArgs = {
   to: string;
   subject: string;
@@ -19,11 +21,15 @@ export function sendEmail({
 }: SendEmailArgs) {
   return new Promise<{ success: boolean; message: string; error?: string }>(
     (resolve, reject) => {
-      const scriptPath = path.join(
-        app.getAppPath(),
-        "scripts",
-        "send-mails.ps1"
-      );
+      const scriptPath = isDev
+        ? path.join(app.getAppPath(), "scripts", "send-mails.ps1")
+        : path.join(process.cwd(), "scripts", "send-mails.ps1");
+
+      console.log({ scriptPath });
+
+      // Build the command using a pipe-separated list for files
+      // (pipe is safe as it cannot appear in Windows file paths)
+      const filesParam = files.length > 0 ? files.join('|') : '';
 
       const psArgs = [
         "-NoProfile",
@@ -31,6 +37,8 @@ export function sendEmail({
         "Bypass",
         "-File",
         scriptPath,
+
+        "--%",
         "-To",
         to,
         "-Subject",
@@ -41,11 +49,14 @@ export function sendEmail({
         mode,
       ];
 
-      // Add files if provided
-      if (files && files.length > 0) {
+      // Add files parameter if provided
+      if (filesParam) {
         psArgs.push("-Files");
-        psArgs.push(...files);
+        psArgs.push(filesParam);
       }
+
+      console.log({ files });
+      console.log({ psArgs });
 
       const child = spawn("powershell.exe", psArgs, {
         windowsHide: true,

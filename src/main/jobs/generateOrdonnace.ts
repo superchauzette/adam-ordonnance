@@ -203,7 +203,7 @@ export async function generateOrdonnances(
   await promisePool(
     list,
     async (patient) => {
-      console.log({ patient });
+      patient.dlp_pompe = formatDate(patient.dlp_pompe)
       const templateName = getTemplateForPatient(patient, correspondances);
       const templatePath = `${templateDir}/${templateName}`;
 
