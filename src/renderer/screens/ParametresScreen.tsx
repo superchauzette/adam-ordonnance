@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { FolderPicker } from "../components/FolderPicker";
 import { FilePicker } from "../components/FilePicker";
 
@@ -8,22 +8,46 @@ export function ParametresScreen({}: ParametresScreenProps) {
   const [templateDir, setTemplateDir] = useState("");
   const [body, setBody] = useState("");
   const [sendMailsScriptPath, setSendMailsScriptPath] = useState("");
+  const [supabaseUrl, setSupabaseUrl] = useState("");
+  const [supabaseServiceRoleKey, setSupabaseServiceRoleKey] = useState("");
 
   useEffect(() => {
     const loadSettings = async () => {
-      const savedTemplateDir = await window.settingsAPI.get("templateDir");
+      const [
+        savedTemplateDir,
+        savedBody,
+        savedScriptPath,
+        savedSupabaseUrl,
+        savedSupabaseServiceRoleKey,
+      ] = await Promise.all([
+        window.settingsAPI.get("templateDir"),
+        window.settingsAPI.get("body"),
+        window.settingsAPI.get("sendMailsScriptPath"),
+        window.settingsAPI.get("supabaseUrl"),
+        window.settingsAPI.get("supabaseServiceRoleKey"),
+      ]);
+
       if (savedTemplateDir && typeof savedTemplateDir === "string") {
         setTemplateDir(savedTemplateDir);
       }
-      
-      const savedBody = await window.settingsAPI.get("body");
+
       if (savedBody && typeof savedBody === "string") {
         setBody(savedBody);
       }
 
-      const savedScriptPath = await window.settingsAPI.get("sendMailsScriptPath");
       if (savedScriptPath && typeof savedScriptPath === "string") {
         setSendMailsScriptPath(savedScriptPath);
+      }
+
+      if (savedSupabaseUrl && typeof savedSupabaseUrl === "string") {
+        setSupabaseUrl(savedSupabaseUrl);
+      }
+
+      if (
+        savedSupabaseServiceRoleKey &&
+        typeof savedSupabaseServiceRoleKey === "string"
+      ) {
+        setSupabaseServiceRoleKey(savedSupabaseServiceRoleKey);
       }
     };
     loadSettings();
@@ -43,6 +67,22 @@ export function ParametresScreen({}: ParametresScreenProps) {
   const handleScriptPathChange = async (path: string) => {
     setSendMailsScriptPath(path);
     await window.settingsAPI.set("sendMailsScriptPath", path);
+  };
+
+  const handleSupabaseUrlChange = async (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setSupabaseUrl(value);
+    await window.settingsAPI.set("supabaseUrl", value);
+  };
+
+  const handleSupabaseServiceRoleKeyChange = async (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setSupabaseServiceRoleKey(value);
+    await window.settingsAPI.set("supabaseServiceRoleKey", value);
   };
 
   return (
@@ -109,6 +149,48 @@ export function ParametresScreen({}: ParametresScreenProps) {
             <p className="text-xs text-gray-500 mt-2">
               Chemin du script PowerShell utilisé pour envoyer les emails via Outlook
             </p>
+          </div>
+
+          <div className="border-t pt-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-800">
+                Connexion Supabase
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Utilisée par la génération des ordonnances pour lire le référentiel
+                patients de <code className="bg-gray-100 px-1 rounded">espace-sante</code>.
+              </p>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold text-slate-700">
+                URL Supabase
+              </span>
+              <input
+                type="text"
+                value={supabaseUrl}
+                onChange={handleSupabaseUrlChange}
+                placeholder="https://xxxxx.supabase.co"
+                className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
+                focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent focus:bg-white
+                transition-all"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-semibold text-slate-700">
+                Clé service role Supabase
+              </span>
+              <input
+                type="password"
+                value={supabaseServiceRoleKey}
+                onChange={handleSupabaseServiceRoleKeyChange}
+                placeholder="service role key"
+                className="px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 
+                focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent focus:bg-white
+                transition-all"
+              />
+            </label>
           </div>
         </div>
       </div>

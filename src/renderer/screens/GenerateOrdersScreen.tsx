@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FilePicker } from "../components/FilePicker";
 import { FolderPicker } from "../components/FolderPicker";
 
 type GenerateOrdersScreenProps = {};
@@ -11,7 +10,6 @@ const formSchema = z
   .object({
     dateFrom: z.string().min(1, "Date de début requise"),
     dateTo: z.string().min(1, "Date de fin requise"),
-    ordersFilePath: z.string().min(1, "Fichier ordonnances requis"),
     outputDir: z.string().min(1, "Dossier de sortie requis"),
   })
   .refine(({ dateFrom, dateTo }) => new Date(dateFrom) <= new Date(dateTo), {
@@ -23,13 +21,20 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function GenerateOrdersScreen({}: GenerateOrdersScreenProps) {
   const [log, setLog] = useState("Prêt à générer les ordonnances...");
+  const [patientReferenceRows, setPatientReferenceRows] = useState<
+    SupabasePatientReferenceRow[]
+  >([]);
+  const [patientReferenceLoading, setPatientReferenceLoading] = useState(false);
+  const [patientReferenceError, setPatientReferenceError] = useState<string | null>(
+    null,
+  );
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -40,33 +45,98 @@ export function GenerateOrdersScreen({}: GenerateOrdersScreenProps) {
       dateTo: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
         .toISOString()
         .split("T")[0], // fin du mois en cours
-      ordersFilePath: "",
       outputDir: "",
     },
   });
+  const [supabaseReady, setSupabaseReady] = useState<boolean | null>(null);
+  const dateFrom = watch("dateFrom");
+  const dateTo = watch("dateTo");
 
   // Load saved outputDir on mount
   useEffect(() => {
-    const loadOutputDir = async () => {
-      const savedOutputDir = await window.settingsAPI.get("outputDir");
+    const loadSettings = async () => {
+      const [savedOutputDir, supabaseUrl, supabaseServiceRoleKey] =
+        await Promise.all([
+          window.settingsAPI.get("outputDir"),
+          window.settingsAPI.get("supabaseUrl"),
+          window.settingsAPI.get("supabaseServiceRoleKey"),
+        ]);
+
       if (savedOutputDir) {
         setValue("outputDir", savedOutputDir as string);
       }
+
+      setSupabaseReady(
+        Boolean(
+          typeof supabaseUrl === "string" &&
+            supabaseUrl.trim() &&
+            typeof supabaseServiceRoleKey === "string" &&
+            supabaseServiceRoleKey.trim(),
+        ),
+      );
     };
-    loadOutputDir();
+    loadSettings();
   }, [setValue]);
 
+  useEffect(() => {
+    const loadPatientReference = async () => {
+      if (supabaseReady === null) {
+        return;
+      }
+
+      if (!supabaseReady) {
+        setPatientReferenceRows([]);
+        setPatientReferenceError(
+          "Configurez Supabase dans Paramètres pour afficher le référentiel patients.",
+        );
+        return;
+      }
+
+      setPatientReferenceLoading(true);
+      setPatientReferenceError(null);
+
+      try {
+        const result = (await window.api.listSupabasePatientReference(
+          dateFrom,
+          dateTo,
+        )) as
+          | { success: true; rows: SupabasePatientReferenceRow[] }
+          | { success: false; rows: []; error?: string };
+
+        if (!result.success) {
+          setPatientReferenceRows([]);
+          setPatientReferenceError(
+            result.error || "Impossible de charger le référentiel patients.",
+          );
+          return;
+        }
+
+        setPatientReferenceRows(result.rows);
+      } catch (error) {
+        setPatientReferenceRows([]);
+        setPatientReferenceError(
+          error instanceof Error ? error.message : String(error),
+        );
+      } finally {
+        setPatientReferenceLoading(false);
+      }
+    };
+
+    loadPatientReference();
+  }, [dateFrom, dateTo, supabaseReady]);
+
   const values = watch();
-  const ordersFileName = values.ordersFilePath
-    ? values.ordersFilePath.split(/[\\/]/).pop() || values.ordersFilePath
-    : "";
 
   const submit = async (data: FormValues) => {
-    setLog("🔄 Génération en cours...\n");
+    setLog(
+      supabaseReady === false
+        ? "⚠️ Connexion Supabase non configurée dans les paramètres. Tentative de génération avec les variables d'environnement éventuelles...\n"
+        : "🔄 Génération en cours depuis Supabase...\n",
+    );
 
     try {
       const result = await window.api.generateOrdonnances(
-        data.ordersFilePath,
+        "",
         data.outputDir,
         data.dateFrom,
         data.dateTo
@@ -79,10 +149,10 @@ export function GenerateOrdersScreen({}: GenerateOrdersScreenProps) {
           [
             "✅ Génération terminée avec succès!",
             `Période: ${data.dateFrom} → ${data.dateTo}`,
-            `Excel ordonnances: ${ordersFileName || data.ordersFilePath}`,
+            "Source patients: Supabase",
             `Dossier de sortie: ${data.outputDir}`,
             `Nombre d'ordonnances générées: ${result.nbPatients || 0}`,
-          ].join("\n")
+          ].join("\n"),
         );
       } else {
         setLog(`❌ Erreur: ${result.error}`);
@@ -103,7 +173,8 @@ export function GenerateOrdersScreen({}: GenerateOrdersScreenProps) {
           Générer les ordonnances
         </h2>
         <p className="text-slate-500">
-          Sélectionnez la période, les fichiers Excel et le dossier de sortie.
+          Sélectionnez la période et le dossier de sortie. Les patients sont
+          récupérés directement depuis Supabase.
         </p>
       </header>
 
@@ -144,22 +215,6 @@ export function GenerateOrdersScreen({}: GenerateOrdersScreenProps) {
             )}
           </label>
 
-          {/* Orders File */}
-          <div>
-            <FilePicker
-              label="Fichier ordonnances (Excel)"
-              value={values.ordersFilePath}
-              onChange={(path) =>
-                setValue("ordersFilePath", path, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-              error={errors.ordersFilePath?.message}
-            />
-            <input type="hidden" {...register("ordersFilePath")} />
-          </div>
-
           {/* Output Directory */}
           <div>
             <FolderPicker
@@ -175,6 +230,20 @@ export function GenerateOrdersScreen({}: GenerateOrdersScreenProps) {
             />
             <input type="hidden" {...register("outputDir")} />
           </div>
+        </div>
+
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm ${
+            supabaseReady
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-amber-200 bg-amber-50 text-amber-900"
+          }`}
+        >
+          {supabaseReady === null
+            ? "Vérification de la connexion Supabase..."
+            : supabaseReady
+              ? "Connexion Supabase prête. La génération utilisera le référentiel patients."
+              : "Connexion Supabase absente. Configurez l'URL et la clé service role dans Paramètres."}
         </div>
 
         {/* Actions */}
@@ -202,6 +271,105 @@ export function GenerateOrdersScreen({}: GenerateOrdersScreenProps) {
           />
         </div>
       </form>
+
+      <section className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-200">
+          <p className="text-xs font-bold uppercase tracking-wider text-sky-500 mb-1">
+            Référentiel Supabase
+          </p>
+          <h3 className="text-lg font-semibold text-slate-800">
+            Patients utilisés pour la génération
+          </h3>
+          <p className="text-sm text-slate-500">
+            Tableau synchronisé avec la même source que le moteur de génération.
+          </p>
+          <p className="mt-2 text-xs font-medium text-slate-400">
+            {patientReferenceRows.length} patient
+            {patientReferenceRows.length > 1 ? "s" : ""} chargé
+            {patientReferenceRows.length > 1 ? "s" : ""}
+          </p>
+        </div>
+
+        <div className="px-6 py-5">
+          {patientReferenceLoading ? (
+            <div className="flex items-center gap-3 text-sm text-slate-500">
+              <span className="h-3 w-3 animate-pulse rounded-full bg-sky-400" />
+              Chargement du référentiel patients...
+            </div>
+          ) : patientReferenceError ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {patientReferenceError}
+            </div>
+          ) : patientReferenceRows.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              Aucun patient trouvé pour la période sélectionnée.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-0 text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="border-b border-slate-200 px-3 py-3 font-semibold">
+                      Patient
+                    </th>
+                    <th className="border-b border-slate-200 px-3 py-3 font-semibold">
+                      Date naissance
+                    </th>
+                    <th className="border-b border-slate-200 px-3 py-3 font-semibold">
+                      DLP pompe
+                    </th>
+                    <th className="border-b border-slate-200 px-3 py-3 font-semibold">
+                      Type pompe
+                    </th>
+                    <th className="border-b border-slate-200 px-3 py-3 font-semibold">
+                      Type capteur
+                    </th>
+                    <th className="border-b border-slate-200 px-3 py-3 font-semibold">
+                      Prescripteur
+                    </th>
+                    <th className="border-b border-slate-200 px-3 py-3 font-semibold">
+                      Centre initiateur
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patientReferenceRows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition-colors"
+                    >
+                      <td className="px-3 py-3">
+                        <div className="font-medium text-slate-800">
+                          {row.nom} {row.prenom}
+                        </div>
+                        <div className="text-xs text-slate-500">{row.id}</div>
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">
+                        {row.date_naissance || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">
+                        {row.dlp_pompe || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">
+                        {row.type_pompe || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">
+                        {row.type_capteur || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">
+                        {row.prescripteur || "—"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-700">
+                        {row.centre_initiateur || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

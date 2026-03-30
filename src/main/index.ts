@@ -6,6 +6,10 @@ import { generateOrdonnances } from "./jobs/generateOrdonnace";
 import { sendEmail } from "./jobs/sendEmail";
 import { wordToPdf } from "./jobs/wordToPdf";
 import { settings } from "./settings";
+import {
+  filterSupabasePatientReferenceRowsByDate,
+  getSupabasePatientReferenceRows,
+} from "./services/supabasePatientReference";
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 let mainWindow: BrowserWindow | null = null;
@@ -134,6 +138,26 @@ function registerIpcHandlers() {
   );
 
   ipcMain.handle(
+    "supabase:list-patient-reference",
+    async (_, dateFrom?: string, dateTo?: string) => {
+      try {
+        const rows = await getSupabasePatientReferenceRows();
+        return {
+          success: true,
+          rows: filterSupabasePatientReferenceRowsByDate(rows, dateFrom, dateTo),
+        };
+      } catch (error) {
+        console.error("Error reading Supabase patient reference:", error);
+        return {
+          success: false,
+          rows: [],
+          error: String(error),
+        };
+      }
+    }
+  );
+
+  ipcMain.handle(
     "select-file",
     async (_, filters?: { name: string; extensions: string[] }[]) => {
       const result = await dialog.showOpenDialog({
@@ -166,13 +190,25 @@ function registerIpcHandlers() {
 
   ipcMain.handle("settings:get", async (_, key: string) => {
     return await settings.get(
-      key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath"
+      key as
+        | "outputDir"
+        | "templateDir"
+        | "body"
+        | "sendMailsScriptPath"
+        | "supabaseUrl"
+        | "supabaseServiceRoleKey"
     );
   });
 
   ipcMain.handle("settings:set", async (_, key: string, value: any) => {
     await settings.set(
-      key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath",
+      key as
+        | "outputDir"
+        | "templateDir"
+        | "body"
+        | "sendMailsScriptPath"
+        | "supabaseUrl"
+        | "supabaseServiceRoleKey",
       value
     );
   });

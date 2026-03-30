@@ -3,6 +3,8 @@ type Settings = {
   templateDir?: string;
   body?: string;
   sendMailsScriptPath?: string;
+  supabaseUrl?: string;
+  supabaseServiceRoleKey?: string;
 };
 
 let storePromise: Promise<any> | null = null;
@@ -20,7 +22,9 @@ function getStore() {
           outputDir: "", 
           templateDir: "src/templates",
           body: "Bonjour,\n\nVeuillez trouver ci-joint les ordonnances demandées.\n\nCordialement,",
-          sendMailsScriptPath: "src/scripts/send-mails.ps1"
+          sendMailsScriptPath: "src/scripts/send-mails.ps1",
+          supabaseUrl: "",
+          supabaseServiceRoleKey: "",
         },
       });
 

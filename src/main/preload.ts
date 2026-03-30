@@ -19,6 +19,12 @@ const api = {
       dateFrom,
       dateTo
     ),
+  listSupabasePatientReference: (dateFrom?: string, dateTo?: string) =>
+    ipcRenderer.invoke(
+      "supabase:list-patient-reference",
+      dateFrom,
+      dateTo
+    ),
   listOutputFiles: (folderName: string) =>
     ipcRenderer.invoke("output:list-files", folderName),
   getSecretaryEmailMapping: () =>

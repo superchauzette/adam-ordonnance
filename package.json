@@ -30,7 +30,9 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "build/icon.ico"
     },
     "directories": {
@@ -45,9 +47,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@supabase/supabase-js": "^2.101.0",
     "csv-parse": "^6.1.0",
     "docxtemplater": "^3.67.6",
-   
     "electron-store": "^11.0.2",
     "fs-extra": "^11.2.0",
     "pizzip": "^3.2.0",
@@ -59,7 +61,6 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
-     "electron": "^30.0.8",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
@@ -68,6 +69,7 @@
     "autoprefixer": "^10.4.23",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
+    "electron": "^30.0.8",
     "electron-builder": "^25.1.8",
     "electronmon": "^2.0.2",
     "postcss": "^8.5.6",
