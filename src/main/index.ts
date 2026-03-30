@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog,Menu  } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, Menu } from "electron";
 import * as fs from "node:fs";
 import * as path from "path";
 import xlsx from "xlsx";
@@ -24,8 +24,6 @@ const createWindow = async () => {
       nodeIntegration: false,
     },
   });
-
- 
 
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -118,7 +116,8 @@ function registerIpcHandlers() {
       dateTo?: string
     ) => {
       try {
-        const templateDir = (await settings.get("templateDir")) || "src/templates";
+        const templateDir =
+          (await settings.get("templateDir")) || "src/templates";
         const result = await generateOrdonnances(
           inputFile,
           outputDir,
@@ -134,18 +133,23 @@ function registerIpcHandlers() {
     }
   );
 
-  ipcMain.handle("select-file", async (_, filters?: { name: string; extensions: string[] }[]) => {
-    const result = await dialog.showOpenDialog({
-      properties: ["openFile"],
-      filters: filters || [{ name: "Excel", extensions: ["xlsx", "xls", "csv"] }],
-    });
+  ipcMain.handle(
+    "select-file",
+    async (_, filters?: { name: string; extensions: string[] }[]) => {
+      const result = await dialog.showOpenDialog({
+        properties: ["openFile"],
+        filters: filters || [
+          { name: "Excel", extensions: ["xlsx", "xls", "csv"] },
+        ],
+      });
 
-    if (result.canceled || result.filePaths.length === 0) {
-      return null;
+      if (result.canceled || result.filePaths.length === 0) {
+        return null;
+      }
+
+      return result.filePaths[0];
     }
-
-    return result.filePaths[0];
-  });
+  );
 
   ipcMain.handle("select-output-folder", async () => {
     const result = await dialog.showOpenDialog({
@@ -161,18 +165,25 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle("settings:get", async (_, key: string) => {
-
-    return await settings.get(key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath");
+    return await settings.get(
+      key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath"
+    );
   });
 
   ipcMain.handle("settings:set", async (_, key: string, value: any) => {
-    await settings.set(key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath", value);
+    await settings.set(
+      key as "outputDir" | "templateDir" | "body" | "sendMailsScriptPath",
+      value
+    );
   });
 
   ipcMain.handle("email:get-secretary-mapping", async () => {
     try {
-      const templateDir = (await settings.get("templateDir")) || "src/templates";
-      const emailFile = path.resolve(path.join(templateDir, "email_secretaire.xlsx"));
+      const templateDir =
+        (await settings.get("templateDir")) || "src/templates";
+      const emailFile = path.resolve(
+        path.join(templateDir, "email_secretaire.xlsx")
+      );
 
       if (!fs.existsSync(emailFile)) {
         return {
@@ -185,9 +196,9 @@ function registerIpcHandlers() {
       const wb = xlsx.readFile(emailFile, { cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const data = xlsx.utils.sheet_to_json<{
-        "HOPITAL": string;
+        HOPITAL: string;
         MEDECINS: string;
-        "Email": string;
+        Email: string;
       }>(ws, { defval: "" });
 
       return { success: true, mapping: data };
@@ -254,4 +265,5 @@ function registerIpcHandlers() {
       }
     }
   );
+
 }
